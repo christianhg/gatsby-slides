@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "dev": "gatsby develop",
+    "dist": "npm run prettier-production && gatsby build",
+    "prettier": "prettier --write \"{**/*,*}.{md,js,ts,css,yml}\"",
+    "prettier-production": "prettier --list-different \"{**/*,*}.{md,js,ts,css,yml}\"",
+    "prettier-staged": "pretty-quick --staged --pattern \"{**/*,*}.{md,js,ts,css,yml}\""
+  },
+  "devDependencies": {
+    "gatsby": "^2.3.14",
+    "gatsby-source-filesystem": "^2.0.28",
+    "gatsby-transformer-remark": "^2.3.8",
+    "prettier": "^1.16.4",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  }
+}
