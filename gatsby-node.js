@@ -1,11 +1,33 @@
+const crypto = require('crypto');
 const path = require('path');
+
+// Remove trailing slash
+exports.onCreatePage = ({ page, actions }) => {
+  const { createPage, deletePage } = actions;
+
+  return new Promise((resolve, reject) => {
+    // Remove trailing slash
+    const newPage = Object.assign({}, page, {
+      path: page.path === `/` ? page.path : page.path.replace(/\/$/, ``),
+    });
+
+    if (newPage.path !== page.path) {
+      // Remove the old page
+      deletePage(page);
+      // Add the new page
+      createPage(newPage);
+    }
+
+    resolve();
+  });
+};
 
 let index = 0;
 
 exports.onCreateNode = ({ node, actions }) => {
   const { createNodeField } = actions;
 
-  if (node.internal.type === 'MarkdownRemark') {
+  if (node.internal.type === 'MarkdownRemark' || node.internal.type === 'Slide') {
     createNodeField({
       node,
       name: 'index',
@@ -16,8 +38,8 @@ exports.onCreateNode = ({ node, actions }) => {
   }
 };
 
-exports.createPages = ({ actions, graphql }) => {
-  const { createPage } = actions;
+exports.createPages = ({ actions, createNodeId, graphql }) => {
+  const { createNode, createPage } = actions;
 
   return graphql(`
     {
@@ -38,9 +60,32 @@ exports.createPages = ({ actions, graphql }) => {
       return Promise.reject(result.errors);
     }
 
-    const slides = addIndexToSlides(sortSlides(getSlides(result)));
+    const slides = sortSlides(getSlides(result));
 
-    slides.forEach(({ index }) => {
+    const slides2 = slides.flatMap(slide =>
+      slide.node.html.split('<hr>').map(html => ({ node: slide.node, html })),
+    );
+
+    slides2.forEach(({ node, html }, index) => {
+      const digest = crypto
+        .createHash(`md5`)
+        .update(html)
+        .digest(`hex`);
+
+      createNode({
+        id: createNodeId(`${node.id}_${index} >>> Slide`),
+        parent: node.id,
+        children: [],
+        internal: {
+          type: `Slide`,
+          contentDigest: digest,
+        },
+        html: html,
+        index: index,
+      });
+    })
+
+    slides2.forEach((slide, index) => {
       createPage({
         path: `/${index}`,
         component: path.resolve(`src/templates/slide.js`),
